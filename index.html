@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#121214">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Помощник ТП">
+<title>Помощник ТП v8.3 PWA</title>
+
+<!-- PWA подключения -->
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon-192.png">
+
+<style>
+/* ... (СТИЛИ ОСТАЮТСЯ ТЕМИ ЖЕ, Я ДОБАВИЛ ТОЛЬКО СТИЛЬ ДЛЯ КНОПКИ УСТАНОВКИ) ... */
+:root{--bg-body:#0d0d10;--bg-surface:#1c1c21;--bg-surface-2:#25252b;--bg-input:#151518;--primary:#3b82f6;--primary-gradient:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);--primary-dim:rgba(59,130,246,0.15);--accent:#10b981;--accent-gradient:linear-gradient(135deg,#10b981 0%,#059669 100%);--accent-dim:rgba(16,185,129,0.15);--danger:#ef4444;--warning:#f59e0b;--whatsapp:#22c55e;--text-main:#f3f4f6;--text-sec:#9ca3af;--text-muted:#6b7280;--border-light:rgba(255,255,255,0.08);--border-focus:rgba(59,130,246,0.5);--spacing-xs:4px;--spacing-sm:8px;--spacing-md:16px;--spacing-lg:24px;--radius-xl:20px;--radius-lg:16px;--radius-md:12px;--radius-sm:8px;--nav-height:70px;--header-height:60px;--input-height:52px;--btn-height:54px;--shadow-sm:0 1px 2px rgba(0,0,0,0.3);--shadow-card:0 4px 20px rgba(0,0,0,0.25);--shadow-glow:0 0 15px rgba(59,130,246,0.2);--backdrop:blur(16px);--glass-bg:rgba(28,28,33,0.85);--anim-speed:0.25s cubic-bezier(0.25,0.8,0.25,1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;outline:none}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,sans-serif;background-color:var(--bg-body);color:var(--text-main);margin:0;padding:0;font-size:16px;line-height:1.5;overflow:hidden;position:fixed;width:100%;height:100%;-webkit-font-smoothing:antialiased}
+body.modal-open{overflow:hidden;height:100vh}
+.container{padding:0 var(--spacing-md);max-width:600px;margin:0 auto;width:100%}
+.hidden{display:none!important}
+header,.bottom-nav{position:fixed;left:0;width:100%;background:var(--glass-bg);backdrop-filter:var(--backdrop);-webkit-backdrop-filter:var(--backdrop);touch-action:none;z-index:2000}
+header{top:0;height:var(--header-height);border-bottom:1px solid var(--border-light);display:flex;align-items:center;padding:0 var(--spacing-md);box-shadow:var(--shadow-sm)}
+.header-content{width:100%;max-width:600px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.app-logo{font-size:18px;font-weight:700;color:#fff;display:flex;align-items:center;gap:var(--spacing-sm);letter-spacing:-0.02em}
+.version-badge{font-size:10px;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:6px;color:var(--text-sec);font-weight:600}
+.tabs-container{position:relative;width:100%;height:100%;background:var(--bg-body);overflow:hidden}
+.swipe-track{display:flex;width:100%;height:100%;overflow-x:scroll;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}
+.swipe-track::-webkit-scrollbar{display:none!important}
+.tab-pane{flex:0 0 100%;width:100%;min-width:100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow-y:auto;padding-top:calc(var(--header-height) + var(--spacing-lg));padding-bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--spacing-lg))}
+.spacer-nav{height:20px;width:100%}
+.bottom-nav{bottom:0;height:calc(var(--nav-height) + env(safe-area-inset-bottom));border-top:1px solid var(--border-light);display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -5px 20px rgba(0,0,0,0.3);transition:transform .3s cubic-bezier(0.2,0,0,1);will-change:transform}
+body.keyboard-open .bottom-nav{transform:translateY(110%);pointer-events:none}
+body.keyboard-open .edit-banner{opacity:0;pointer-events:none}
+.nav-item{background:0 0;border:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;color:var(--text-sec);cursor:pointer;flex:1;padding:0}
+.nav-icon{width:24px;height:24px;will-change:transform}
+.nav-label{font-size:10px;font-weight:500;letter-spacing:.2px}
+.nav-item.active{color:var(--primary)}
+.nav-item.active .nav-icon{transform:scale(1.1)}
+.nav-pill{position:absolute;top:-1px;left:0;width:20%;height:3px;background:var(--primary);box-shadow:0 2px 10px var(--primary);border-radius:0 0 4px 4px;z-index:2001;pointer-events:none;will-change:transform}
+.icon-wrapper{position:relative;display:flex;align-items:center;justify-content:center}
+.nav-badge{position:absolute;top:-4px;right:-8px;background-color:var(--danger);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--bg-surface);z-index:10;animation:popIn .3s cubic-bezier(0.175,0.885,0.32,1.275)}
+label{display:flex;align-items:center;margin:0 0 8px 4px;color:var(--text-sec);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.icon-label{font-style:normal;margin-right:6px;font-size:13px;opacity:.9}
+input,select,textarea,.custom-select-btn{width:100%;height:var(--input-height);background:var(--bg-input);border:1px solid var(--border-light);border-radius:var(--radius-md);padding:0 var(--spacing-md);color:var(--text-main);font-size:16px;transition:all var(--anim-speed);margin-bottom:var(--spacing-md);display:block;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#1a1a20;box-shadow:var(--shadow-glow)}
+textarea{height:auto;padding:14px;resize:none;min-height:80px}
+.input-code{font-family:"Menlo",monospace;font-size:13px;color:#d1d5db;background:#111}
+.input-sm{height:42px;font-size:14px;margin-bottom:12px}
+.custom-select-btn{text-align:left;display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0;background-image:none}
+.custom-select-btn::after{content:'';border:5px solid transparent;border-top-color:var(--text-sec);margin-top:3px}
+.toggle-row{display:flex;align-items:center;margin-bottom:var(--spacing-md);cursor:pointer;user-select:none;background:var(--bg-surface);border:1px solid var(--border-light);padding:14px;border-radius:var(--radius-md);transition:background .2s}
+.toggle-row:active{background:var(--bg-surface-2)}
+.toggle-row input{display:none}
+.toggle-visual{position:relative;width:44px;height:24px;background:#333;border-radius:12px;margin-right:12px;transition:all .3s ease;flex-shrink:0}
+.toggle-visual::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:all .3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 2px 4px rgba(0,0,0,0.3)}
+.toggle-row input:checked+.toggle-visual{background:var(--primary)}
+.toggle-row input:checked+.toggle-visual::after{transform:translateX(20px)}
+.toggle-text{font-size:15px;font-weight:500;color:var(--text-main)}
+button{user-select:none;-webkit-user-select:none}
+.btn-main,.btn-finish,.btn-save,.btn-whatsapp{width:100%;border:none;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s,box-shadow .2s}
+.btn-main:active,.btn-finish:active,.btn-save:active,.btn-whatsapp:active{transform:scale(0.97);opacity:.9}
+.btn-main,.btn-finish,.btn-save{height:var(--btn-height);font-size:16px;font-weight:600}
+.btn-main{background:var(--primary-gradient);color:#fff;letter-spacing:.3px;box-shadow:0 4px 15px rgba(59,130,246,0.4)}
+.btn-finish{background:var(--accent-gradient);color:#fff;font-weight:700;box-shadow:0 4px 15px rgba(16,185,129,0.3)}
+.btn-save{background:#292932;color:#666;font-weight:700;transition:all .3s;cursor:not-allowed}
+.btn-save.dirty{background:var(--primary);color:#fff;box-shadow:0 4px 15px rgba(59,130,246,0.4);cursor:pointer}
+.btn-sec{width:100%;height:44px;background:0 0;color:var(--text-sec);border:none;font-weight:500;cursor:pointer;font-size:14px}
+.btn-dashed{border:1px dashed var(--text-muted);border-radius:var(--radius-md);color:var(--primary);width:100%;height:44px;background:rgba(59,130,246,0.05);font-weight:600;font-size:14px;margin-bottom:20px;cursor:pointer;transition:background .2s}
+.btn-dashed:active{background:rgba(59,130,246,0.1)}
+.btn-icon-small{background:rgba(255,255,255,0.05);border:1px solid var(--border-light);width:36px;height:36px;border-radius:50%;color:var(--text-sec);font-size:16px;display:flex;align-items:center;justify-content:center}
+.btn-quick-add{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:20px;display:none;align-items:center;justify-content:center;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.btn-remove{width:var(--input-height);height:var(--input-height);background:rgba(239,68,68,0.1);color:var(--danger);border:none;border-radius:var(--radius-md);font-size:18px;flex-shrink:0}
+.btn-help-mini{background:rgba(255,255,255,0.08);width:24px;height:24px;border-radius:50%;border:none;color:var(--text-sec);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-copy{background:var(--primary-dim);color:var(--primary);border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.btn-reset{width:100%;background:0 0;border:1px solid var(--border-light);color:var(--text-sec);height:44px;border-radius:var(--radius-md);font-size:13px;cursor:pointer}
+.btn-sort-list{background:0 0;border:1px solid var(--text-muted);border-radius:4px;padding:2px 8px;color:var(--text-sec);font-size:11px;cursor:pointer}
+.card-tags {display: flex;flex-wrap: wrap;gap: 8px;margin-top: 10px;}
+.u-tag {display: inline-flex;align-items: center;justify-content: center;height: 28px;padding: 0 10px;border-radius: 6px;font-size: 12px;font-weight: 600;border: 1px solid transparent;white-space: nowrap;box-sizing: border-box;}
+.u-tag.tag-route {background: #333;color: #ddd;border-color: rgba(255,255,255,0.1);}
+.u-tag.tag-transit {background: rgba(139, 92, 246, 0.15);color: #c4b5fd;border-color: rgba(139, 92, 246, 0.2);}
+.u-tag.tag-address {background: rgba(245, 158, 11, 0.15);color: var(--warning);border-color: rgba(245, 158, 11, 0.3);}
+.u-tag.tag-amount {font-family: "Menlo", monospace;background: transparent;color: var(--accent);border: none;letter-spacing: -0.5px;font-size: 14px;font-weight: 700;padding: 0;height: auto;margin: 0;}
+.u-tag.tag-amount.empty {font-size: 14px;font-weight: 600;color: var(--text-muted);background: transparent;border: 1px solid var(--border-light);padding: 2px 6px;height: 24px;border-radius: 6px;}
+.btn-whatsapp {background: #25D366;color: #fff;height: 48px;font-size: 15px;font-weight: 700;margin-top: 10px;box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);display: flex;align-items: center;justify-content: center;gap: 10px;}
+.btn-whatsapp svg {width: 20px;height: 20px;fill: currentColor;display: block;}
+.cards-list{display:flex;flex-direction:column;gap:12px}
+.card,.input-card,.report-card,.settings-group{background:var(--bg-surface);border:1px solid var(--border-light)}
+.input-card,.settings-group{border-radius:var(--radius-xl);padding:20px;box-shadow:var(--shadow-card);margin-bottom:24px}
+.input-card{margin-bottom:0}
+.card{border-radius:var(--radius-lg);padding:16px;position:relative;display:flex;flex-direction:column;gap:8px;user-select:none;transition:transform .1s,background .2s;cursor:pointer;box-shadow:var(--shadow-sm)}
+.card:active{transform:scale(0.98);background-color:var(--bg-surface-2)}
+.card.editing-focus{box-shadow:0 0 0 2px var(--primary);border-color:var(--primary)}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card-azs{font-size:17px;font-weight:700;color:#fff;line-height:1.3}
+.card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.card-note{font-size:13px;color:var(--text-sec);margin-top:4px;display:flex;align-items:center;gap:4px}
+.empty-state{text-align:center;color:var(--text-muted);padding:60px 0;font-size:15px;font-weight:500}
+.ac-card{background:var(--bg-surface);border-radius:var(--radius-lg);margin-bottom:12px;border:1px solid var(--border-light);overflow:hidden}
+.ac-header{padding:16px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.02);cursor:pointer;transition:background .2s}
+.ac-header:active{background:rgba(255,255,255,0.05)}
+.ac-date{font-weight:600;color:var(--text-main);font-size:15px;display:flex;align-items:center;gap:8px}
+.ac-body{display:none;padding:0;border-top:1px solid var(--border-light)}
+.ac-body.open{display:block;animation:slideDown .2s}
+.ac-body .card{background:0 0;border:none;border-bottom:1px solid var(--border-light);border-radius:0;margin:0;padding:14px 16px;box-shadow:none}
+.ac-body .card:last-child{border-bottom:none}
+.badge{font-size:11px;padding:4px 8px;border-radius:6px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.badge-counter{background:var(--primary);color:#fff;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700;min-width:24px;text-align:center}
+.chips-wrapper{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;max-height:140px;overflow-y:auto;padding-bottom:5px}
+.chip{background:var(--bg-surface-2);color:var(--text-sec);padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border-light);transition:all .2s;white-space:nowrap;flex-shrink:0}
+.chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.chip.taken{background:rgba(245,158,11,0.15);color:var(--warning);border-color:rgba(245,158,11,0.3)}
+.label-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.wrapper-relative{position:relative;width:100%;margin-bottom:16px}
+.wrapper-with-btn input{padding-right:50px!important}
+.amounts-container{margin-bottom:12px}
+.amount-row{display:flex;gap:10px;margin-bottom:10px}
+.amount-row input{margin-bottom:0;font-family:monospace;font-size:18px;letter-spacing:-.5px}
+.contact-row{display:flex;align-items:center;background:var(--bg-surface);padding:10px 14px;border-radius:var(--radius-md);margin-bottom:10px;border:1px solid var(--border-light)}
+.contact-info{flex:1}
+.contact-name{font-weight:600;color:#fff;font-size:14px}
+.contact-phone{font-family:monospace;font-size:12px;color:var(--text-sec);margin-top:2px}
+.section-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:0 4px}
+.section-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.divider{height:1px;background:var(--border-light);margin:20px 0}
+.flex-row{display:flex;align-items:center}
+.gap-10{gap:10px}.flex-1{flex:1}
+.mt-10{margin-top:10px}.mt-20{margin-top:20px}.mt-30{margin-top:30px}.mt-40{margin-top:40px}
+.mb-10{margin-bottom:10px}.mb-15{margin-bottom:15px}
+.p-0{padding:0!important}.m-0{margin:0!important}
+.max-w-90{max-width:90%}.text-left{text-align:left}
+.bg-transparent{background:0 0!important}.text-danger{color:var(--danger)!important}.text-primary{color:var(--primary)}
+.autocomplete-wrapper{position:relative;z-index:50}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#222226;border-radius:var(--radius-md);z-index:1000;max-height:250px;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.8);margin-top:6px;border:1px solid var(--border-light);display:none}
+.autocomplete-item{padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:15px}
+.autocomplete-item:last-child{border-bottom:none}
+.autocomplete-item:active{background:var(--primary);color:#fff}
+.hidden-fields{display:none;background:rgba(0,0,0,0.2);padding:16px;border-radius:var(--radius-md);margin-bottom:16px;border-left:3px solid var(--warning)}
+.hidden-fields.active{display:block;animation:slideDown .2s forwards;position: relative;z-index: 100;}
+.route-hint-text{font-size:13px;color:var(--warning);margin-bottom:15px;padding-left:5px;min-height:20px;margin-top:10px;line-height:1.4}
+.settings-header{font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;opacity:.9}
+.backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-backup{height:70px;background:rgba(255,255,255,0.03);border:1px solid var(--border-light);border-radius:var(--radius-md);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12px;cursor:pointer}
+.icon-big{font-size:24px}
+#tab-settings input[type=text],#tab-settings textarea{background:#111;border:1px solid var(--border-light);color:#ddd;font-family:"Menlo",monospace;font-size:13px}
+.report-card{border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.report-toolbar{background:var(--bg-surface-2);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-light)}
+.report-label{font-size:11px;font-weight:800;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px}
+.report-content{padding:16px;font-family:"Menlo",monospace;font-size:12px;color:#ddd;white-space:pre-wrap;line-height:1.5}
+.bs-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:3000;opacity:0;visibility:hidden;transition:.3s;display:flex;align-items:flex-end}
+.bs-overlay.active{opacity:1;visibility:visible}
+.bs-panel{width:100%;background:#18181b;border-radius:28px 28px 0 0;padding:24px;padding-bottom:calc(24px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.9,0.3,1);max-height:85vh;display:flex;flex-direction:column;border-top:1px solid var(--border-light);box-shadow:0 -10px 50px rgba(0,0,0,0.5);position:relative}
+.bs-panel::before{content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;pointer-events:none}
+.bs-overlay.active .bs-panel{transform:translateY(0)}
+.bs-header{text-align:center;font-weight:700;color:#fff;margin-bottom:24px;font-size:16px;margin-top:10px}
+.bs-content{overflow-y:auto;touch-action:pan-y}
+.bs-item{width:100%;padding:16px;background:var(--bg-surface-2);border:1px solid var(--border-light);border-radius:16px;color:#fff;font-size:16px;font-weight:600;margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.bs-item:active{transform:scale(0.98);background:#333}
+.bs-item.selected{border-color:var(--primary);background:rgba(59,130,246,0.1);color:var(--primary)}
+.bs-action-btn{width:100%;padding:18px;background:rgba(255,255,255,0.03);border:none;margin:0;border-bottom:1px solid var(--border-light);color:#fff;font-size:16px;font-weight:500;display:flex;align-items:center;gap:16px;text-align:left;border-radius:0}
+.bs-action-btn:first-child{border-radius:16px 16px 0 0}
+.bs-action-btn:last-child{border-radius:0 0 16px 16px;border-bottom:none}
+.bs-action-btn:active{background:rgba(255,255,255,0.08)}
+.bs-action-btn.danger{color:var(--danger)}
+.custom-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:4000;align-items:center;justify-content:center}
+.custom-modal.active{display:flex;animation:fadeIn .2s}
+.cm-card{background:#222226;width:85%;max-width:340px;border-radius:24px;padding:28px;text-align:center;border:1px solid var(--border-light);box-shadow:0 20px 60px rgba(0,0,0,0.6);transform:scale(0.9);animation:popIn .2s forwards}
+.cm-title{font-size:19px;font-weight:700;margin-bottom:12px;color:#fff}
+.cm-text{font-size:15px;color:var(--text-sec);margin-bottom:28px;line-height:1.5}
+.cm-btns{display:flex;gap:12px}
+.cm-btn{flex:1;height:48px;border:none;border-radius:14px;font-weight:600;cursor:pointer;font-size:15px}
+.cm-confirm{background:var(--primary);color:#fff}
+.cm-danger{background:var(--danger);color:#fff}
+.cm-cancel{background:#333;color:#ccc}
+.edit-banner{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(245,158,11,0.15);border:1px solid var(--warning);color:var(--warning);padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;z-index:80;display:flex;align-items:center;gap:8px;backdrop-filter:blur(4px);box-shadow:0 5px 15px rgba(0,0,0,0.3)}
+.cheat-content-scroll{max-height:50vh;overflow-y:auto;margin-bottom:15px}
+.cheat-row{display:flex;border-bottom:1px solid var(--border-light);padding:10px 0}
+.cheat-route{width:60px;font-weight:700;color:var(--warning);margin-right:12px;flex-shrink:0}
+.cheat-desc{font-size:13px;color:#ccc;line-height:1.4}
+.pulse-icon{animation:pulse 1.5s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:.5}100%{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.card {touch-action: pan-y; transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;position: relative;}
+.card.is-dragging-placeholder {opacity: 0.3;background: var(--bg-surface-2);box-shadow: inset 0 0 0 2px var(--primary-dim);}
+.card-clone {position: fixed;z-index: 10000;pointer-events: none;box-shadow: 0 15px 40px rgba(0,0,0,0.6);transform: scale(1.05) rotate(1deg);opacity: 0.95;border-radius: var(--radius-lg);background: var(--bg-surface);border: 1px solid var(--primary);width: 100%;transform-origin: center center;}
+body.dragging-active {overflow: hidden !important;user-select: none;-webkit-user-select: none;touch-action: none;}
+
+/* Кнопка установки приложения */
+.btn-install-app {
+    display: none; /* Скрыта по умолчанию */
+    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    color: white;
+    width: 100%;
+    margin-bottom: 20px;
+    height: 60px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: var(--radius-lg);
+    border: none;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+</style>
+</head>
+<body>
+
+<header id="appHeader">
+<div class="header-content">
+<div class="app-logo"><img width="40" height="40" src="./icon.svg" alt="box"/>Помощник ТП <span class="version-badge">v8.3 PWA</span></div>
+<div id="headerActionArea"></div>
+</div>
+</header>
+
+<div id="editModeBanner" class="edit-banner" style="display:none">
+<span class="pulse-icon">✏️</span> РЕЖИМ ПРАВКИ
+</div>
+
+<main class="tabs-container">
+<div id="swipeTrack" class="swipe-track">
+<section id="tab-input" class="tab-pane active">
+<div class="container">
+<div class="input-card">
+<label><i class="icon-label">⛽</i> Точка / АЗС</label>
+<div class="wrapper-with-btn autocomplete-wrapper wrapper-relative">
+<input type="text" id="azsInput" placeholder="Поиск..." autocomplete="off">
+<button id="quickAddAzsBtn" class="btn-quick-add" onclick="quickAddAzs()">+</button>
+<div id="azsList" class="autocomplete-list"></div>
+</div>
+
+<label><i class="icon-label">💰</i> Суммы</label>
+<div id="amountsContainer" class="amounts-container"></div>
+<button class="btn-dashed" onclick="addAmountField()">+ Добавить сумму</button>
+
+<label class="toggle-row">
+<input type="checkbox" id="diffAddressCheck">
+<div class="toggle-visual"></div>
+<div class="toggle-text">Адрес отличается</div>
+</label>
+
+<div id="diffAddressBlock" class="hidden-fields">
+<label>Фактический адрес</label>
+<div class="autocomplete-wrapper wrapper-with-btn wrapper-relative">
+<input type="text" id="factAddressInput" placeholder="Куда везти..." autocomplete="off">
+<button id="quickAddFactBtn" class="btn-quick-add" onclick="quickAddFactAddress()" style="display:none">+</button>
+<div id="factAddressList" class="autocomplete-list"></div>
+</div>
+</div>
+
+<label class="toggle-row">
+<input type="checkbox" id="transitCheck">
+<div class="toggle-visual"></div>
+<div class="toggle-text">Транзитный груз</div>
+</label>
+
+<label class="label-header">
+<span><i class="icon-label">🚚</i> Маршрут</span>
+<button class="btn-help-mini" onclick="openRouteCheatSheet()">?</button>
+</label>
+<div class="route-row">
+<div class="route-wrapper">
+<select id="routeSelect" style="display:none"></select>
+<button id="routeSelectBtn" class="custom-select-btn" onclick="openRouteSheet()">Точка (По умолчанию)</button>
+</div>
+</div>
+<div id="routeHint" class="route-hint-text"></div>
+
+<div class="label-header">
+<label class="m-0"><i class="icon-label">📝</i> Примечание</label>
+<button class="btn-dashed" style="width:auto;height:32px;font-size:11px;padding:0 12px;margin:0 0 5px 0" onclick="openNoteSheet()">Выбрать...</button>
+</div>
+
+<div class="wrapper-with-btn wrapper-relative">
+<input type="text" id="noteInput" placeholder="Спросить, Офис..." autocomplete="off">
+<button id="quickAddNoteBtn" class="btn-quick-add" onclick="quickAddNote()">+</button>
+</div>
+
+<div class="form-actions-row mt-20">
+<button id="mainActionBtn" class="btn-main flex-2" onclick="handleMainAction()">Добавить в список</button>
+</div>
+<button id="cancelEditBtn" class="btn-sec text-danger mt-10" style="display:none" onclick="resetForm()">Отмена редактирования</button>
+</div>
+<div class="spacer-nav"></div>
+</div>
+</section>
+
+<section id="tab-list" class="tab-pane">
+<div class="container">
+<div class="section-header-row">
+<div class="section-title">Текущие заявки</div>
+<div class="badge-counter" id="draftCount">0</div>
+</div>
+<div id="draftList" class="cards-list">
+<div class="empty-state">Список пуст</div>
+</div>
+<div class="mt-30">
+<button id="archiveBtn" class="btn-finish" style="display:none" onclick="saveToArchive()">
+<span>🏁</span> Завершить день
+</button>
+</div>
+<button id="cancelArchiveEditBtn" class="btn-sec mt-10" style="display:none" onclick="cancelArchiveEdit()">Выйти из архива</button>
+<div class="spacer-nav"></div>
+</div>
+</section>
+
+<section id="tab-reports" class="tab-pane">
+<div class="container">
+<div class="report-card">
+<div class="report-toolbar">
+<div class="report-label">👤 Для Оператора</div>
+<button class="btn-copy" onclick="copyReportText($('reportOperator').textContent)">Копировать</button>
+</div>
+<div class="report-content" id="reportOperator"></div>
+<div style="padding:0 16px 16px 16px">
+
+<button class="btn-whatsapp" onclick="handleSendReport('operator')">
+    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+    Отправить отчет оператору
+</button>
+</div>
+</div>
+
+<div class="report-card">
+<div class="report-toolbar">
+<div class="report-label">🚛 Для Экспедиторов</div>
+<button class="btn-copy" onclick="copyReportText($('reportExpeditor').textContent)">Копировать</button>
+</div>
+<div class="report-content" id="reportExpeditor"></div>
+<div style="padding:0 16px 16px 16px">
+
+<button class="btn-whatsapp" onclick="handleSendReport('expeditor')">
+    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+    Отправить отчет экспедитору
+</button>
+</div>
+</div>
+<div class="spacer-nav"></div>
+</div>
+</section>
+
+<section id="tab-archive" class="tab-pane">
+<div class="container">
+<div class="section-header-row">
+<div class="section-title">История дней</div>
+<button class="btn-icon-small" onclick="clearAllArchive()">🗑</button>
+</div>
+<div id="archiveContainer"></div>
+<div class="spacer-nav"></div>
+</div>
+</section>
+
+<section id="tab-settings" class="tab-pane">
+<div class="container">
+    
+<!-- КНОПКА УСТАНОВКИ ПРИЛОЖЕНИЯ -->
+<button id="installAppBtn" class="btn-install-app" onclick="installPWA()">📲 Установить на экран</button>
+
+<div class="settings-group">
+<div class="settings-header">Контакты WhatsApp</div>
+<label>Операторы</label>
+<div id="listOperators" class="mb-15"></div>
+<button class="btn-dashed" onclick="addContact('operator')">+ Добавить оператора</button>
+<label class="mt-20">Экспедиторы</label>
+<div id="listExpeditors" class="mb-15"></div>
+<button class="btn-dashed" onclick="addContact('expeditor')">+ Добавить экспедитора</button>
+</div>
+
+<div class="settings-group">
+<div class="settings-header">Справочники</div>
+<label class="label-header">Список АЗС <button class="btn-sort-list" onclick="sortAzsList()">A-Z</button></label>
+<textarea id="settingAzs" rows="5" class="input-code"></textarea>
+<label>Маршруты</label>
+<textarea id="settingRoutes" rows="2" class="input-code"></textarea>
+<label>Быстрые кнопки (Примечание)</label>
+<textarea id="settingNotes" rows="3" placeholder="Мунай 15, В Офис..."></textarea>
+</div>
+
+<div class="settings-group">
+<div class="settings-header">Автоматизация</div>
+<div class="setting-row-toggle">
+<label class="toggle-row bg-transparent p-0 m-0" style="border:none">
+<input type="checkbox" id="settingAutoSort">
+<div class="toggle-visual"></div>
+<div class="toggle-text">Авто-сортировка заявок</div>
+</label>
+</div>
+<div class="divider"></div>
+<label class="text-primary mt-10">Авто-маршрут (Привязка)</label>
+<div class="flex-row gap-10">
+<select id="settingBindRouteSelect" style="display:none"></select>
+<button id="settingBindRouteBtn" class="custom-select-btn flex-1" onclick="openBindRouteSheet()">Загрузка...</button>
+</div>
+<div id="settingBindRouteHint" class="route-hint-text mb-10"></div>
+<button class="btn-dashed mt-10" onclick="openBindAzsSheet()">✏️ Выбрать АЗС для этого маршрута...</button>
+<textarea id="settingBindText" rows="3" class="hidden"></textarea>
+<div class="divider"></div>
+<label class="text-primary mt-10">Транзит (Авто-переключение)</label>
+<div class="route-hint-text mb-10">Отметьте АЗС, которые считаются транзитными</div>
+<button class="btn-dashed" onclick="openBindTransitSheet()">✏️ Выбрать АЗС (Транзит)...</button>
+<textarea id="settingTransitList" rows="2" class="hidden"></textarea>
+<div class="divider"></div>
+<label class="text-primary mt-10">Подсказки (Районы)</label>
+<div class="flex-row gap-10">
+<select id="settingHintRouteSelect" style="display:none"></select>
+<button id="settingHintRouteBtn" class="custom-select-btn flex-1" onclick="openHintRouteSheet()">Точка (По умолчанию)</button>
+</div>
+<textarea id="settingHintText" rows="2" class="mt-10"></textarea>
+</div>
+
+<div class="settings-group">
+<div class="settings-header">Данные</div>
+<div class="backup-grid">
+<button class="btn-backup btn-backup-dl" onclick="exportDb()"><span class="icon-big">⬇️</span><span>Сохранить базу</span></button>
+<button class="btn-backup btn-backup-ul" onclick="$('importFile').click()"><span class="icon-big">⬆️</span><span>Загрузить базу</span></button>
+<input type="file" id="importFile" style="display:none" accept=".json" onchange="importDb(this)">
+</div>
+<button class="btn-reset mt-20" onclick="fullReset()">Сброс настроек</button>
+</div>
+
+<div class="mt-40 buttons-row">
+<button id="saveSettingsBtn" class="btn-save" style="width:100%" onclick="saveSettings()" disabled>Сохранить</button>
+<button id="cancelSettingsBtn" class="btn-reset mt-10" style="width:100%;height:50px;display:none" onclick="revertSettings()">Отменить изменения</button>
+</div>
+<div class="spacer-nav"></div>
+</div>
+</section>
+</div>
+</main>
+
+<nav class="bottom-nav">
+<button class="nav-item active" onclick="switchTab('tab-input',this)">
+<svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+<span class="nav-label">Новая</span>
+</button>
+<button class="nav-item" onclick="switchTab('tab-list',this)">
+<div class="icon-wrapper">
+<svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+<span id="navBadge" class="nav-badge" style="display:none">0</span>
+</div>
+<span class="nav-label">Список</span>
+</button>
+<button class="nav-item" onclick="switchTab('tab-reports',this)">
+<svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+<span class="nav-label">Отчеты</span>
+</button>
+<button class="nav-item" onclick="switchTab('tab-archive',this)">
+<svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+<span class="nav-label">История</span>
+</button>
+<button class="nav-item" onclick="switchTab('tab-settings',this)">
+<svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.15 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+<span class="nav-label">Меню</span>
+</button>
+<div class="nav-pill"></div>
+</nav>
+
+<div id="bottomSheet" class="bs-overlay" onclick="closeBottomSheet(event)">
+<div id="bsPanel" class="bs-panel">
+<div id="bsHeader" class="bs-header">Выберите вариант</div>
+<div id="bsContent" class="bs-content"></div>
+</div>
+</div>
+
+<div id="customModal" class="custom-modal">
+<div class="cm-card">
+<div id="cmTitle" class="cm-title"></div>
+<div id="cmText" class="cm-text"></div>
+<input type="text" id="cmInput" class="cm-input" style="display:none" autocomplete="off">
+<div class="cm-btns" id="cmButtons"></div>
+</div>
+</div>
+
+<div id="routeCheatModal" class="custom-modal">
+<div class="cm-card cheat-card p-20 max-w-90">
+<div class="cm-title">Справочник</div>
+<div id="cheatSheetContent" class="cheat-content-scroll text-left"></div>
+<button class="cm-btn cm-confirm btn-left" onclick="closeRouteCheatSheet()">Закрыть</button>
+</div>
+</div>
+<input type="datetime-local" id="archiveDatePicker" style="position:fixed;top:-5000px;left:-5000px">
+<script>
+const $=id=>document.getElementById(id);
+const $$=sel=>document.querySelectorAll(sel);
+const vibrate=()=>{if(navigator.vibrate)navigator.vibrate(10)};
+const RU_MAP={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'c','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+const getSearchCode=str=>{if(!str)return"";let s=str.toLowerCase().split('').map(char=>RU_MAP[char]||char).join('');return s.replace(/x/g,'h').replace(/h/g,'g').replace(/[cq]/g,'k').replace(/ck/g,'k').replace(/[yj]/g,'i').replace(/z/g,'s').replace(/ph/g,'f').replace(/[^a-z0-9]/g,'')};
+const DB={get:(key,def=[])=>{try{return JSON.parse(localStorage.getItem(key))||def}catch{return def}},set:(key,val)=>localStorage.setItem(key,JSON.stringify(val))};
+const parseList=val=>val.split(',').map(s=>s.trim()).filter(Boolean);
+const DEFAULTS={azs:["Sinooil","Гелиос","Compas","Мунай","Dala Brand"],routes:["1/1","2/1","4/3","4/4","СЗ"],notes:["Тасбугет","Кольцевая","КазГюа","Центр","Вонючка","КБИ"]};
+const DEFAULT_HINTS={"1/1":"ЦЕНТР, ЖАЙНА, МЕРЕЙ, АКМЕЧЕТЬ, ЗУБЕНКА, ПЕРОН","2/1":"АРАЙ, ШҰГЫЛА, 1000 МЕЛОЧЕЙ, УНИВЕРСАМ, ДЭУ, НАБЕРЕЖНАЯ, ОМЦ, НАЛОГОВАЯ, ЛЕВЫЙ БЕРЕГ, АВТОВОКЗАЛ, ДИАГНОСТИКА, ЕВРАЗИЯ","4/3":"ТОРАЙГЫРОВА, ТИТОВ, ГАГАРИН, ШАНХАЙ, КОММУНИЗМ, КБИ, БЕЛКӨЛ, КОМСОМОЛ, АЛЬ-ФАРАБИ","4/4":"НОВОСТРОЙКА, ВЗЛЕТКА, ҚОРҚЫТ-АТА, ТӨЛЕ БИ, КИРОВ, НАУРЫЗ, НОВЫЙ БАЗАР, НОВ.МЕЧЕТЬ, АГРОПРОМ, ТАСБӨГЕТ, ЗАВОДСКАЯ, САЯХАТ, САБАЛАҚ, СЫҒАНАҚ, АНА МЕН БАЛА, ИППОДРОМ","СЗ":"САМОВЫВОЗ"};
+let state={draft:[],archive:[],refAzs:[],refRoutes:[],refNotes:[],routeHints:{},pointBindings:{},transitList:[],autoSort:!1,contacts:{operator:[],expeditor:[]},editingId:null,archiveEditId:null,stash:[]};
+let pressTimer=null,isLongPress=!1;
+let tempHints={},tempBindings={},tempContacts={operator:[],expeditor:[]};
+let currentHintRoute='',currentBindRoute='';
+const startPress=id=>{isLongPress=!1;pressTimer=setTimeout(()=>{isLongPress=!0;openArchiveContextMenu(id)},600)};
+const endPress=el=>{clearTimeout(pressTimer);const card=el?el.closest('.ac-card'):document.querySelector('.ac-card.pressed');if(card)card.classList.remove('pressed')};
+const handleArchiveHeaderClick=el=>{if(!isLongPress)el.nextElementSibling.classList.toggle('open')};
+function init(){
+loadData();renderRefLists();
+// УДАЛЕНА СТАРАЯ ГЕНЕРАЦИЯ МАНИФЕСТА
+setupAutocomplete('azsInput','azsList',()=>state.refAzs);
+setupAutocomplete('factAddressInput','factAddressList',()=>state.refAzs);
+$('routeSelect').addEventListener('change',updateRouteHint);
+$('azsInput').addEventListener('input',e=>checkRouteBinding(e.target.value));
+$('noteInput').addEventListener('input',e=>{checkQuickNote(e.target.value);highlightActiveNotes(e.target.value)});
+$('diffAddressCheck').addEventListener('change',e=>{$('diffAddressBlock').classList.toggle('active',e.target.checked)});
+['settingAzs','settingRoutes','settingNotes','settingAutoSort','settingHintText','settingBindText','settingTransitList'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',()=>{checkSettingsDirty();refreshLiveUI()})});
+setupKeyboardBehavior();setupBottomSheetSwipe();
+resetForm();renderDraft();renderArchive();prepareSettingsTab();
+document.getElementById('swipeTrack').dispatchEvent(new Event('scroll'));
+switchTab('tab-input',$$('.nav-item')[0])
+}
+function handleMainAction(){vibrate();const azs=$('azsInput').value.trim();if(!azs)return showCustomAlert('Ошибка','Введите название АЗС');const entry={id:state.editingId||Date.now(),azs,route:$('routeSelect').value,amounts:Array.from($$('.amount-row input')).map(i=>i.value.trim()).filter(Boolean).join(' / '),isTransit:$('transitCheck').checked,isDiff:$('diffAddressCheck').checked,factAddr:$('diffAddressCheck').checked?$('factAddressInput').value.trim():'',note:$('noteInput').value.trim()};if(state.editingId){const idx=state.draft.findIndex(i=>i.id===state.editingId);if(idx!==-1)state.draft[idx]=entry;showCustomAlert('Готово','Заявка обновлена')}else{state.draft.push(entry)}saveData();resetForm()}
+function resetForm(){$('azsInput').value='';$('factAddressInput').value='';$('noteInput').value='';renderAmountInputs([]);$('routeSelect').value=state.refRoutes[0]||'';updateRouteHint();$('diffAddressCheck').checked=!1;$('transitCheck').checked=!1;$('diffAddressBlock').classList.remove('active');['quickAddAzsBtn','quickAddFactBtn','quickAddNoteBtn'].forEach(id=>$(id).style.display='none');highlightActiveNotes('');state.editingId=null;const btn=$('mainActionBtn');btn.textContent='Добавить в список';btn.style.background='var(--primary-gradient)';$('cancelEditBtn').style.display='none';$('editModeBanner').style.display=state.archiveEditId?'flex':'none';updateSelectButtons();renderDraft()}
+
+function renderDraft() {
+    const list = $('draftList');
+    if (state.autoSort) state.draft.sort((a, b) => a.route.localeCompare(b.route));
+    const count = state.draft.length;
+    $('draftCount').textContent = count;
+    const badge = $('navBadge');
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
+    if (count > 0) {
+        badge.style.animation = 'none';
+        badge.offsetHeight;
+        badge.style.animation = 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    }
+    $('archiveBtn').style.display = (count > 0 || state.archiveEditId) ? 'flex' : 'none';
+    list.innerHTML = '';
+    if (count === 0) {
+        list.innerHTML = `<div class="empty-state">${state.archiveEditId ? 'Архив очищен' : 'Список пуст<br><small style="opacity:0.6">Перейдите на вкладку "Новая"</small>'}</div>`;
+        return;
+    }
+    state.draft.forEach((item, index) => {
+        const el = document.createElement('div');
+        el.className = `card ${state.editingId === item.id ? 'editing-focus' : ''}`;
+        el.dataset.id = item.id;
+        let amountHtml = item.amounts ? `<span class="u-tag tag-amount" style="margin:0">${item.amounts}</span>` : `<span class="u-tag tag-amount empty" style="margin:0">НЕТ СУММЫ</span>`;
+        let mainTagsHtml = `<span class="u-tag tag-route">${item.route}</span>`;
+        if (item.isTransit) {
+            mainTagsHtml += `<span class="u-tag tag-transit">⇄ Транзит</span>`;
+        }
+        let addressHtml = (item.isDiff && item.factAddr) ? `<div style="margin-top: 8px;"><span class="u-tag tag-address">⚠️ ${item.factAddr}</span></div>` : '';
+        const noteHtml = item.note ? `<div class="card-note" style="margin-top:8px">ℹ️ ${item.note}</div>` : '';
+        el.innerHTML = `<div class="card-top"><div class="card-azs">${item.azs}</div>${amountHtml}</div><div class="card-tags">${mainTagsHtml}</div>${addressHtml}${noteHtml}`;
+        setupDragItem(el, item, index);
+        list.appendChild(el);
+    });
+    renderReports();
+}
+function cancelArchiveEdit(){showCustomConfirm('Выход','Выйти из режима правки без сохранения?','Выйти','Отмена',()=>exitArchiveEditMode())}
+function loadForEdit(id){const item=state.draft.find(i=>i.id===id);if(!item)return;state.editingId=id;$('azsInput').value=item.azs;renderAmountInputs(item.amounts?item.amounts.split(' / '):[]);$('routeSelect').value=item.route;$('transitCheck').checked=item.isTransit||!1;$('diffAddressCheck').checked=item.isDiff;$('diffAddressBlock').classList.toggle('active',item.isDiff);if(item.isDiff)$('factAddressInput').value=item.factAddr;$('noteInput').value=item.note||'';highlightActiveNotes(item.note||'');updateRouteHint();updateSelectButtons();const btn=$('mainActionBtn');btn.textContent='Сохранить изменения';btn.style.background='#f59e0b';$('cancelEditBtn').style.display='block';switchTab('tab-input',$$('.nav-item')[0])}
+function saveToArchive(){if(!state.draft.length)return;if(state.archiveEditId)return handleUpdateArchive();showCustomConfirm('Завершение дня','Перенести текущий список в архив?','Завершить','Отмена',()=>{state.archive.unshift({id:Date.now(),date:new Date().toLocaleDateString()+', '+new Date().toLocaleTimeString().slice(0,5),items:[...state.draft]});state.draft=[];saveData();renderDraft();renderArchive();resetForm();switchTab('tab-archive',$$('.nav-item')[3])})}
+function renderArchive() {
+    const c = $('archiveContainer');
+    c.innerHTML = '';
+    if (state.archive.length === 0) {
+        c.innerHTML = '<div class="empty-state">История пуста</div>';
+        return;
+    }
+    state.archive.forEach(rec => {
+        const div = document.createElement('div');
+        div.className = 'ac-card';
+        if (state.archiveEditId === rec.id) div.classList.add('editing-focus');
+        const groups = {};
+        rec.items.forEach(i => {
+            if (!groups[i.route]) groups[i.route] = [];
+            groups[i.route].push(i);
+        });
+        let contentHtml = '';
+        Object.keys(groups).sort().forEach(r => {
+            contentHtml += `<div class="settings-header" style="margin:20px 16px 8px 16px; color:#6b7280; font-size:10px;">${r}</div>`;
+            groups[r].forEach(item => {
+                let amountHtml = '';
+                if (item.amounts) {
+                    amountHtml = `<span class="u-tag tag-amount" style="margin:0">${item.amounts}</span>`;
+                } else {
+                    amountHtml = `<span class="u-tag tag-amount empty" style="margin:0">НЕТ СУММЫ</span>`;
+                }
+                let mainTagsHtml = '';
+                mainTagsHtml += `<span class="u-tag tag-route">${item.route}</span>`;
+                if (item.isTransit) mainTagsHtml += `<span class="u-tag tag-transit">⇄ Транзит</span>`;
+                let addressHtml = '';
+                if (item.isDiff && item.factAddr) {
+                    addressHtml = `<div style="margin-top: 8px;"><span class="u-tag tag-address">⚠️ ${item.factAddr}</span></div>`;
+                }
+                const noteHtml = item.note ? `<div class="card-note" style="margin-top:8px">ℹ️ ${item.note}</div>` : '';
+                contentHtml += `<div class="card"><div class="card-top"><div class="card-azs">${item.azs}</div>${amountHtml}</div><div class="card-tags">${mainTagsHtml}</div>${addressHtml}${noteHtml}</div>`;
+            });
+        });
+        div.innerHTML = `<div class="ac-header" ontouchstart="startPress(${rec.id})" ontouchend="endPress()" onmousedown="startPress(${rec.id})" onmouseup="endPress()" onmouseleave="endPress()" onclick="handleArchiveHeaderClick(this)"><div class="ac-date">📅 ${rec.date}</div><div class="badge-counter" style="background:#333">${rec.items.length}</div></div><div class="ac-body">${contentHtml}<div style="height:12px;"></div></div>`;
+        c.appendChild(div);
+    });
+}
+function editArchiveRecord(id){const rec=state.archive.find(r=>r.id===id);if(!rec)return;if(state.draft.length>0)state.stash=[...state.draft];state.archiveEditId=id;state.draft=[...rec.items];$('editModeBanner').style.display='flex';$('archiveBtn').innerHTML='<span>💾</span> ОБНОВИТЬ АРХИВ';$('archiveBtn').style.background='#f59e0b';$('cancelArchiveEditBtn').style.display='block';saveData();renderDraft();switchTab('tab-list',$$('.nav-item')[1])}
+function handleUpdateArchive(){showCustomConfirm('Обновление','Сохранить изменения в архиве?','Сохранить','Отмена',()=>{const idx=state.archive.findIndex(r=>r.id===state.archiveEditId);if(idx!==-1){state.archive[idx].items=[...state.draft]}exitArchiveEditMode()})}
+function exitArchiveEditMode(){state.archiveEditId=null;state.draft=state.stash.length?[...state.stash]:[];state.stash=[];$('editModeBanner').style.display='none';$('archiveBtn').innerHTML='<span>🏁</span> Завершить день';$('archiveBtn').style.background='var(--accent-gradient)';$('cancelArchiveEditBtn').style.display='none';saveData();renderDraft();renderArchive();switchTab('tab-archive',$$('.nav-item')[3])}
+function deleteArchiveRecord(id){showCustomConfirm('Удаление','Удалить эту запись из истории?','Удалить','Отмена',()=>{state.archive=state.archive.filter(r=>r.id!==id);saveData();renderArchive()})}
+function clearAllArchive(){showCustomConfirm('Очистка','Удалить ВСЮ историю?','Да, удалить всё','Отмена',()=>{state.archive=[];saveData();renderArchive()})}
+function prepareSettingsTab(){$('settingAzs').value=state.refAzs.join(', ');$('settingRoutes').value=state.refRoutes.join(', ');$('settingNotes').value=state.refNotes.join(', ');$('settingAutoSort').checked=state.autoSort;$('settingTransitList').value=state.transitList.join(', ');tempHints=JSON.parse(JSON.stringify(state.routeHints));tempBindings=JSON.parse(JSON.stringify(state.pointBindings));tempContacts=JSON.parse(JSON.stringify(state.contacts||{operator:[],expeditor:[]}));renderContactList('operator');renderContactList('expeditor');updateLiveSettingsUI();if(state.refRoutes.length){const r=state.refRoutes[0];currentHintRoute=currentBindRoute=r;$('settingBindRouteBtn').textContent=r;$('settingBindRouteSelect').value=currentBindRoute;$('settingHintRouteSelect').value=currentHintRoute;loadHintToEdit(currentHintRoute);loadBindToEdit(currentBindRoute)}else{$('settingBindRouteBtn').textContent="Нет маршрутов"}updateSelectButtons();checkSettingsDirty()}
+function saveSettings(){vibrate();state.refAzs=parseList($('settingAzs').value);state.refRoutes=parseList($('settingRoutes').value);state.refNotes=parseList($('settingNotes').value);state.autoSort=$('settingAutoSort').checked;state.transitList=parseList($('settingTransitList').value);if(currentHintRoute)tempHints[currentHintRoute]=$('settingHintText').value.trim();if(currentBindRoute)tempBindings[currentBindRoute]=$('settingBindText').value.trim();state.routeHints={...tempHints};state.pointBindings={...tempBindings};state.contacts=JSON.parse(JSON.stringify(tempContacts));saveData();renderRefLists();renderDraft();const btn=$('saveSettingsBtn');btn.textContent='Сохранено! ✔';checkSettingsDirty();setTimeout(()=>{if(btn.disabled)btn.textContent='Сохранить настройки'},2000)}
+function checkSettingsDirty(){const btnSave=$('saveSettingsBtn'),btnCancel=$('cancelSettingsBtn');const valStr=id=>$(id).value.trim(),arrStr=arr=>arr.join(', ');if(currentHintRoute)tempHints[currentHintRoute]=$('settingHintText').value.trim();if(currentBindRoute)tempBindings[currentBindRoute]=$('settingBindText').value.trim();const compareObjs=(objA,objB)=>{const keys=new Set([...Object.keys(objA||{}),...Object.keys(objB||{})]);for(let key of keys)if((objA[key]||'').trim()!==(objB[key]||'').trim())return!1;return!0};const hasChanges=valStr('settingAzs')!==arrStr(state.refAzs)||valStr('settingRoutes')!==arrStr(state.refRoutes)||valStr('settingNotes')!==arrStr(state.refNotes)||valStr('settingTransitList')!==arrStr(state.transitList)||$('settingAutoSort').checked!==state.autoSort||!compareObjs(tempHints,state.routeHints)||!compareObjs(tempBindings,state.pointBindings)||JSON.stringify(tempContacts)!==JSON.stringify(state.contacts);btnSave.disabled=!hasChanges;btnSave.classList.toggle('dirty',hasChanges);btnSave.textContent=hasChanges?'Сохранить настройки':btnSave.textContent;btnCancel.style.display=hasChanges?'block':'none';track.style.overflowX=hasChanges?'hidden':'scroll'}
+function getLiveRouteList(){return parseList($('settingRoutes').value)}
+function getLiveAzsList(){return parseList($('settingAzs').value)}
+function updateLiveSettingsUI(){const fill=(selId,items)=>{const sel=$(selId);sel.innerHTML='';items.forEach(i=>sel.add(new Option(i,i)))};fill('settingBindRouteSelect',getLiveRouteList());fill('settingHintRouteSelect',getLiveRouteList())}
+function switchBindRoute(){tempBindings[currentBindRoute]=$('settingBindText').value.trim();currentBindRoute=$('settingBindRouteSelect').value;loadBindToEdit(currentBindRoute)}
+function loadBindToEdit(route){$('settingBindText').value=tempBindings[route]||'';const hint=tempHints[route];$('settingBindRouteHint').textContent=hint?`👉 ${hint}`:''}
+function switchHintRoute(){tempHints[currentHintRoute]=$('settingHintText').value.trim();currentHintRoute=$('settingHintRouteSelect').value;loadHintToEdit(currentHintRoute)}
+function loadHintToEdit(r){$('settingHintText').value=tempHints[r]||'';$('settingHintRouteBtn').textContent=r}
+function renderReports(){
+const fmt=(str,suff='')=>str?str.split('/').map(s=>s.trim().replace(/\s/g,'')+suff).join(' / '):'';
+const opText=state.draft.map(i=>`${i.azs} | ${i.amounts?fmt(i.amounts)+' | ':''}${i.route}`).join('\n\n')||'(Пусто)';
+$('reportOperator').textContent=opText;
+const groups={};state.refRoutes.forEach(r=>groups[r]=[]);state.draft.forEach(i=>{if(!groups[i.route])groups[i.route]=[];groups[i.route].push(i)});let expText='';[...state.refRoutes,...Object.keys(groups).filter(r=>!state.refRoutes.includes(r))].forEach(route=>{const items=groups[route];if(items&&items.length>0){expText+=`=== ${route} ===\n\n`+items.map((i,idx,arr)=>{let lines=[`🗺 ${i.route}${i.isTransit?' [Склад/Офис]':''}`];if(i.amounts)lines.push(`💰 ${fmt(i.amounts,'~')}`);if(i.note)lines.push(`ℹ️ ${i.note}`);let block=`📄 ${i.azs}${i.isDiff&&i.factAddr?' ➜ '+i.factAddr:''}`;lines.forEach((l,lx)=>block+=(lx===lines.length-1?'\n ╚═':'\n ╠═')+l);return block}).join('\n\n')+'\n\n'}});
+$('reportExpeditor').textContent=expText.trim()||'(Пусто)'
+}
+function copyReportText(text){if(!text)return;const success=()=>showCustomAlert('Готово','Скопировано в буфер!');navigator.clipboard.writeText(text).then(success).catch(()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);success()})}
+function loadData(){state.draft=DB.get('tp_currentDraft');state.archive=DB.get('tp_tradeArchive');state.refAzs=DB.get('tp_myAzs',DEFAULTS.azs);state.refRoutes=DB.get('tp_myRoutes',DEFAULTS.routes);state.refNotes=DB.get('tp_myNotes',DEFAULTS.notes);state.routeHints=DB.get('tp_routeHints',DEFAULT_HINTS);state.pointBindings=DB.get('tp_pointBindings',{});state.autoSort=DB.get('tp_autoSort',!1);state.stash=DB.get('tp_stash');state.transitList=DB.get('tp_transitList',[]);state.contacts=DB.get('tp_contacts',{operator:[],expeditor:[]})}
+function saveData(){DB.set('tp_currentDraft',state.draft);DB.set('tp_tradeArchive',state.archive);DB.set('tp_myAzs',state.refAzs);DB.set('tp_myRoutes',state.refRoutes);DB.set('tp_myNotes',state.refNotes);DB.set('tp_routeHints',state.routeHints);DB.set('tp_pointBindings',state.pointBindings);DB.set('tp_autoSort',state.autoSort);DB.set('tp_stash',state.stash);DB.set('tp_transitList',state.transitList);DB.set('tp_contacts',state.contacts)}
+function setupAutocomplete(inputId,listId,dataGetter){const input=$(inputId),list=$(listId);input.addEventListener('input',()=>{const rawVal=input.value;const searchCode=getSearchCode(rawVal);list.innerHTML='';if(!rawVal){list.style.display='none';return}const matches=dataGetter().filter(item=>getSearchCode(item).includes(searchCode));if(matches.length){list.style.display='block';matches.forEach(m=>{const d=document.createElement('div');d.className='autocomplete-item';d.textContent=m;d.onclick=()=>{input.value=m;list.style.display='none';checkRouteBinding(m)};list.appendChild(d)})}else{list.style.display='none'}})}
+function findOwnerInBindings(azsName,bindingsObj,currentKey){const v=azsName.toLowerCase();for(const[key,str]of Object.entries(bindingsObj)){if(key===currentKey)continue;if((str||'').split(',').map(s=>s.trim().toLowerCase()).includes(v))return key}return null}
+function checkRouteBinding(val){const v=val.trim().toLowerCase();for(const[r,pts]of Object.entries(state.pointBindings)){if(pts&&pts.split(',').map(s=>s.trim().toLowerCase()).includes(v)){$('routeSelect').value=r;updateRouteHint();updateSelectButtons();break}}const isTransitAuto=state.transitList.some(t=>t.toLowerCase()===v);if(isTransitAuto)$('transitCheck').checked=!0;const exists=state.refAzs.some(x=>x.toLowerCase()===v);$('quickAddAzsBtn').style.display=(!exists&&v.length)?'flex':'none'}
+function showCustomModal(title,text,buttons){$('cmTitle').textContent=title;$('cmText').textContent=text;$('cmInput').style.display='none';const btns=$('cmButtons');btns.innerHTML='';buttons.forEach(b=>{const btn=document.createElement('button');btn.className=`cm-btn ${b.cls}`;btn.textContent=b.txt;btn.onclick=b.action?()=>{closeCustomModal();b.action()}:closeCustomModal;btns.appendChild(btn)});$('customModal').classList.add('active')}
+const showCustomAlert=(title,text)=>showCustomModal(title,text,[{txt:'ОК',cls:'cm-confirm'}]);
+const showCustomConfirm=(title,text,okLabel,cancelLabel,onOk)=>showCustomModal(title,text,[{txt:cancelLabel,cls:'cm-cancel'},{txt:okLabel,cls:'cm-confirm',action:onOk}]);
+const closeCustomModal=()=>$('customModal').classList.remove('active');
+function openRouteSheet(){const cur=$('routeSelect').value;openBottomSheet(state.refRoutes,v=>{$('routeSelect').value=v;updateRouteHint();updateSelectButtons()},'Маршрут',cur)}
+function openBindRouteSheet(){openBottomSheet(getLiveRouteList(),selectedRoute=>{if(currentBindRoute)tempBindings[currentBindRoute]=$('settingBindText').value.trim();currentBindRoute=selectedRoute;$('settingBindRouteBtn').textContent=selectedRoute;const sel=$('settingBindRouteSelect');sel.innerHTML='';sel.add(new Option(selectedRoute,selectedRoute));sel.value=selectedRoute;loadBindToEdit(selectedRoute)},'Выберите маршрут',currentBindRoute)}
+function openHintRouteSheet(){openBottomSheet(getLiveRouteList(),v=>{$('settingHintRouteSelect').value=v;switchHintRoute()},'Маршрут',currentHintRoute)}
+function openBottomSheet(items,onSelect,title,selected){$('bsHeader').textContent=title;$('bsContent').innerHTML='';items.forEach(i=>{const d=document.createElement('div');d.className='bs-item';d.textContent=i;if(i===selected)d.classList.add('selected');d.onclick=()=>{onSelect(i);closeBottomSheet()};$('bsContent').appendChild(d)});$('bottomSheet').classList.add('active')}
+function closeBottomSheet(e){if(!e||e.target.classList.contains('bs-overlay')){$('bottomSheet').classList.remove('active');$('bsPanel').style.transform=''}}
+function openNoteSheet(){const content=$('bsContent');$('bsHeader').textContent='Выберите примечания';content.innerHTML='<div id="sheetChipsWrapper" class="chips-wrapper" style="max-height: none; justify-content: flex-start; margin-bottom: 20px;"></div>';const wrapper=$('sheetChipsWrapper');const currentParts=$('noteInput').value.split(',').map(s=>s.trim().toLowerCase());state.refNotes.forEach(note=>{const chip=document.createElement('div');chip.className='chip';chip.style.cssText="padding:8px 16px; font-size:14px;";chip.textContent=note;if(currentParts.includes(note.toLowerCase()))chip.classList.add('active');chip.onclick=()=>{toggleNoteValue(note);chip.classList.toggle('active')};wrapper.appendChild(chip)});const btnDone=document.createElement('button');btnDone.className='btn-main';btnDone.textContent='Готово / Закрыть';btnDone.onclick=()=>$('bottomSheet').classList.remove('active');content.appendChild(btnDone);$('bottomSheet').classList.add('active')}
+function toggleNoteValue(note){const inp=$('noteInput');let parts=parseList(inp.value);const idx=parts.findIndex(p=>p.toLowerCase()===note.toLowerCase());if(idx>=0)parts.splice(idx,1);else parts.push(note);inp.value=parts.join(', ');inp.dispatchEvent(new Event('input'))}
+function renderAmountInputs(vals){$('amountsContainer').innerHTML='';vals.forEach(addAmountInputToDom)}
+function addAmountField(){addAmountInputToDom('')}
+function addAmountInputToDom(val){const d=document.createElement('div');d.className='amount-row';d.innerHTML=`<input type="number" placeholder="Сумма" value="${val}"><button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;$('amountsContainer').appendChild(d)}
+function updateSelectButtons(){$('routeSelectBtn').textContent=$('routeSelect').value||'Точка (По умолчанию)'}
+function checkQuickNote(val){const v=val.trim().toLowerCase();$('quickAddNoteBtn').style.display=(!v||state.refNotes.some(n=>n.toLowerCase()===v))?'none':'flex'}
+function quickAddNote(){state.refNotes.push($('noteInput').value.trim());saveData();$('quickAddNoteBtn').style.display='none'}
+function highlightActiveNotes(val){const parts=val.split(',').map(s=>s.trim().toLowerCase());$$('#noteChipsContainer .chip').forEach(c=>{c.classList.toggle('active',parts.includes(c.textContent.toLowerCase()))})}
+function updateRouteHint(){const val=$('routeSelect').value;let t=state.routeHints[val]||'';if(!t)for(const k in state.routeHints)if(val.startsWith(k)){t=state.routeHints[k];break}$('routeHint').textContent=t?`👉 ${t}`:''}
+function sortAzsList(){const a=$('settingAzs');let items=parseList(a.value);items.sort((x,y)=>x.localeCompare(y,undefined,{numeric:!0}));a.value=items.join(', ');checkSettingsDirty();showCustomAlert('Готово','Список отсортирован (A-Z)')}
+function openRouteCheatSheet(){let h='<div class="p-0">';for(const[k,v]of Object.entries(state.routeHints))h+=`<div class="cheat-row"><div class="cheat-route">${k}</div><div class="cheat-desc">${v}</div></div>`;$('cheatSheetContent').innerHTML=h+'</div>';$('routeCheatModal').classList.add('active')}
+function closeRouteCheatSheet(){$('routeCheatModal').classList.remove('active')}
+function quickAddAzs(){state.refAzs.push($('azsInput').value.trim());saveData();$('quickAddAzsBtn').style.display='none';showCustomAlert('OK','АЗС добавлена')}
+function quickAddFactAddress(){state.refAzs.push($('factAddressInput').value.trim());saveData();$('quickAddFactBtn').style.display='none';showCustomAlert('OK','Адрес добавлен в базу')}
+function exportDb(){const d={meta:{date:new Date},draft:state.draft,archive:state.archive,settings:{refAzs:state.refAzs,refRoutes:state.refRoutes,refNotes:state.refNotes,routeHints:state.routeHints,pointBindings:state.pointBindings,autoSort:state.autoSort,contacts:state.contacts}};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`TP_Backup_${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a)}
+function importDb(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.settings||!d.archive)throw new Error;showCustomConfirm('Восстановление','Заменить текущую базу данными из файла?','Заменить','Отмена',()=>{DB.set('tp_currentDraft',d.draft||[]);DB.set('tp_tradeArchive',d.archive||[]);DB.set('tp_myAzs',d.settings.refAzs);DB.set('tp_myRoutes',d.settings.refRoutes);DB.set('tp_myNotes',d.settings.refNotes);DB.set('tp_routeHints',d.settings.routeHints);DB.set('tp_pointBindings',d.settings.pointBindings);DB.set('tp_autoSort',d.settings.autoSort);DB.set('tp_contacts',d.settings.contacts||{operator:[],expeditor:[]});location.reload()})}catch{showCustomAlert('Ошибка','Некорректный файл')}};r.readAsText(f);input.value=''}
+function fullReset(){showCustomConfirm('Сброс','Сбросить приложение до заводских настроек? Все данные удалятся.','СБРОСИТЬ','Отмена',()=>{localStorage.clear();location.reload()})}
+function deleteItem(idx){showCustomConfirm('Удалить','Удалить эту заявку?','Да','Нет',()=>{state.draft.splice(idx,1);saveData();renderDraft()})}
+function duplicateItem(idx){state.draft.splice(idx+1,0,{...state.draft[idx],id:Date.now()});saveData();renderDraft()}
+function filterBindChips(q,id){const v=q.toLowerCase();$$(`#${id} .chip`).forEach(c=>c.style.display=c.dataset.val.includes(v)?'block':'none')}
+function changeArchiveTime(id){const picker=$('archiveDatePicker');const rec=state.archive.find(r=>r.id===id);if(!rec)return;try{const[dPart,tPart]=rec.date.split(', ');const[day,month,year]=dPart.split('.');picker.value=`${year}-${month}-${day}T${tPart}`}catch(e){}picker.onchange=function(){if(this.value){const d=new Date(this.value);const day=String(d.getDate()).padStart(2,'0'),month=String(d.getMonth()+1).padStart(2,'0'),year=d.getFullYear(),time=d.toLocaleTimeString().slice(0,5);rec.date=`${day}.${month}.${year}, ${time}`;state.archive.sort((a,b)=>{const parseDate=str=>{try{const[dateS,timeS]=str.split(', ');const[dd,mm,yyyy]=dateS.split('.');return new Date(`${yyyy}-${mm}-${dd}T${timeS}`).getTime()}catch(e){return 0}};return parseDate(b.date)-parseDate(a.date)});saveData();renderArchive();showCustomAlert('Готово','Дата изменена, список отсортирован.')}};try{picker.showPicker()}catch{picker.click()}}
+function renderRefLists(){const fill=(id,data)=>{const s=$(id);s.innerHTML='';data.forEach(i=>s.add(new Option(i,i)))};fill('routeSelect',state.refRoutes);updateSelectButtons()}
+function revertSettings(){prepareSettingsTab();showCustomAlert('Сброшено','Настройки возвращены к последнему сохранению.');checkSettingsDirty()}
+function refreshLiveUI(){updateSelectPreservingValue('settingBindRouteSelect',getLiveRouteList());updateSelectPreservingValue('settingHintRouteSelect',getLiveRouteList())}
+function updateSelectPreservingValue(id,items){const sel=$(id);const savedVal=sel.value;sel.innerHTML='';items.forEach(i=>sel.add(new Option(i,i)));if(items.includes(savedVal)){sel.value=savedVal;const btnId=id.replace('Select','Btn');if($(btnId))$(btnId).textContent=savedVal}else if(items.length>0){sel.value=items[0];if(id==='settingBindRouteSelect')switchBindRoute();if(id==='settingHintRouteSelect')switchHintRoute()}}
+function openBindAzsSheet(){if(!currentBindRoute)return showCustomAlert('Ошибка','Сначала выберите маршрут выше');const content=$('bsContent');$('bsHeader').textContent=`Привязка к: ${currentBindRoute}`;content.innerHTML=`<input type="text" placeholder="Поиск АЗС..." class="input-sm" style="margin-bottom:10px;" oninput="filterSheetChips(this.value)"><div id="sheetBindWrapper" class="chips-wrapper" style="max-height: 60vh; justify-content: flex-start;"></div><button class="btn-main mt-10" onclick="$('bottomSheet').classList.remove('active')">Готово</button>`;const wrapper=$('sheetBindWrapper');const currentList=parseList($('settingBindText').value);const currentLower=currentList.map(s=>s.toLowerCase());getLiveAzsList().forEach(azs=>{const azsLow=azs.toLowerCase();const btn=document.createElement('div');btn.className='chip';btn.style.padding="8px 14px";btn.textContent=azs;btn.dataset.val=azsLow;const owner=findOwnerInBindings(azs,tempBindings,currentBindRoute);const isActive=currentLower.includes(azsLow);if(isActive)btn.classList.add('active');else if(owner)btn.classList.add('taken');btn.onclick=()=>{const toggleCurrent=()=>{let list=parseList($('settingBindText').value);const idx=list.findIndex(x=>x.toLowerCase()===azsLow);if(idx>=0){list.splice(idx,1);btn.classList.remove('active')}else{list.push(azs);btn.classList.add('active')}const newVal=list.join(', ');$('settingBindText').value=newVal;tempBindings[currentBindRoute]=newVal;btn.classList.remove('taken');checkSettingsDirty()};if(owner&&!btn.classList.contains('active')){$('bottomSheet').classList.remove('active');showCustomConfirm('Конфликт',`"${azs}" уже у маршрута "${owner}". Забрать себе?`,'Забрать','Отмена',()=>{let oldList=parseList(tempBindings[owner]).filter(x=>x.toLowerCase()!==azsLow);tempBindings[owner]=oldList.join(', ');toggleCurrent();openBindAzsSheet()});return}toggleCurrent()};wrapper.appendChild(btn)});$('bottomSheet').classList.add('active')}
+function filterSheetChips(val){const v=val.toLowerCase();$$('.bs-content .chip').forEach(c=>{c.style.display=c.dataset.val.includes(v)?'block':'none'})}
+function renderContactList(type){const list=$(`list${type.charAt(0).toUpperCase()+type.slice(1)}s`);list.innerHTML='';const contacts=tempContacts[type]||[];if(contacts.length===0){list.innerHTML='<div style="font-size:12px; color:#555; text-align:center; padding:5px;">Нет номеров</div>';return}contacts.forEach(c=>{const d=document.createElement('div');d.className='contact-row';d.innerHTML=`<div class="contact-info" onclick="editContact('${type}', ${c.id})"><div class="contact-name">${c.name}</div><div class="contact-phone">${c.phone}</div></div><button class="btn-remove" style="width:30px; height:30px; font-size:14px;" onclick="deleteContact('${type}', ${c.id})">✕</button>`;list.appendChild(d)})}
+function addContact(type){const content=$('bsContent');$('bsHeader').textContent=type==='operator'?'Новый оператор':'Новый экспедитор';content.innerHTML=`<label>Имя / Метка</label><input type="text" id="contactNameInput" placeholder="Например: Офис" autocomplete="off"><label>Номер телефона</label><input type="tel" id="contactPhoneInput" placeholder="7701..." autocomplete="off"><button class="btn-main" onclick="saveNewContact('${type}')">Добавить (Не забудьте Сохранить)</button>`;$('bottomSheet').classList.add('active');setTimeout(()=>$('contactNameInput').focus(),100)}
+function editContact(type,id){const contact=tempContacts[type].find(c=>c.id===id);if(!contact)return;const content=$('bsContent');$('bsHeader').textContent='Редактировать контакт';content.innerHTML=`<label>Имя / Метка</label><input type="text" id="contactNameInput" value="${contact.name}" autocomplete="off"><label>Номер телефона</label><input type="tel" id="contactPhoneInput" value="${contact.phone}" autocomplete="off"><button class="btn-main" onclick="updateContact('${type}', ${id})">Обновить (Не забудьте Сохранить)</button>`;$('bottomSheet').classList.add('active')}
+function saveNewContact(type){const name=$('contactNameInput').value.trim();const phone=$('contactPhoneInput').value.trim();if(!name||!phone)return showCustomAlert('Ошибка','Заполните оба поля');if(!tempContacts[type])tempContacts[type]=[];tempContacts[type].push({id:Date.now(),name,phone});renderContactList(type);checkSettingsDirty();$('bottomSheet').classList.remove('active')}
+function updateContact(type,id){const name=$('contactNameInput').value.trim();const phone=$('contactPhoneInput').value.trim();if(!name||!phone)return showCustomAlert('Ошибка','Заполните оба поля');const idx=tempContacts[type].findIndex(c=>c.id===id);if(idx!==-1){tempContacts[type][idx]={id,name,phone};renderContactList(type);checkSettingsDirty();$('bottomSheet').classList.remove('active')}}
+function deleteContact(type,id){showCustomConfirm('Удаление','Удалить этот контакт?','Да','Отмена',()=>{tempContacts[type]=tempContacts[type].filter(c=>c.id!==id);renderContactList(type);checkSettingsDirty()})}
+function handleSendReport(type){const text=$(`report${type.charAt(0).toUpperCase()+type.slice(1)}`).textContent;if(!text||text==='(Пусто)')return showCustomAlert('Пусто','Нет данных для отправки');const contacts=state.contacts[type]||[];if(contacts.length===0){showCustomAlert('Нет контактов',`Добавьте номера для "${type==='operator'?'Оператора':'Экспедитора'}" в настройках.`);return}if(contacts.length===1){sendToWhatsapp(contacts[0].phone,text)}else{const content=$('bsContent');$('bsHeader').textContent='Выберите получателя';content.innerHTML='';contacts.forEach(c=>{const btn=document.createElement('button');btn.className='bs-item';btn.innerHTML=`<span>${c.name}</span> <span style="font-size:12px; color:#888;">${c.phone}</span>`;btn.onclick=()=>{sendToWhatsapp(c.phone,text);$('bottomSheet').classList.remove('active')};content.appendChild(btn)});$('bottomSheet').classList.add('active')}}
+function sendToWhatsapp(phone,text){let cleanPhone=phone.replace(/\D/g,'');if(cleanPhone.length===10)cleanPhone='7'+cleanPhone;window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`,'_blank')}
+function setupBottomSheetSwipe(){let bsStart=0;const panel=$('bsPanel'),content=$('bsContent');panel.addEventListener('touchstart',e=>{const isHeader=e.target.closest('.bs-header')||e.target===panel;const isContentTop=content.scrollTop<=0;if(isHeader||isContentTop){bsStart=e.touches[0].clientY;panel.style.transition='none'}else{bsStart=0}},{passive:!0});panel.addEventListener('touchmove',e=>{if(!bsStart)return;let delta=e.touches[0].clientY-bsStart;if(delta>0){if(e.cancelable)e.preventDefault();panel.style.transform=`translateY(${delta}px)`}},{passive:!1});panel.addEventListener('touchend',e=>{if(!bsStart)return;let delta=e.changedTouches[0].clientY-bsStart;panel.style.transition='transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1)';if(delta>120){$('bottomSheet').classList.remove('active');setTimeout(()=>{panel.style.transform=''},300)}else{panel.style.transform=''}bsStart=0})}
+const track=document.getElementById('swipeTrack');const TABS=['tab-input','tab-list','tab-reports','tab-archive','tab-settings'];const NAV_ITEMS=document.querySelectorAll('.nav-item');let navPill=document.querySelector('.nav-pill')||(()=>{const p=document.createElement('div');p.className='nav-pill';document.querySelector('.bottom-nav').appendChild(p);return p})();let currentIndex=0,isRestoring=!1,isTicking=!1;const colStart={r:156,g:163,b:175};const colEnd={r:59,g:130,b:246};
+function updateNavOnScroll(){if(isRestoring){isTicking=!1;return}const width=track.offsetWidth,scrollLeft=track.scrollLeft,progress=scrollLeft/width;navPill.style.transform=`translate3d(${progress*100}%, 0, 0)`;NAV_ITEMS.forEach((btn,index)=>{const icon=btn.querySelector('.nav-icon'),distance=Math.abs(progress-index),strength=Math.max(0,1-distance);if(icon){icon.style.transform=`translateY(${-4*strength}px) scale(${1+(strength*0.15)})`}btn.style.color=`rgb(${Math.round(colStart.r+(colEnd.r-colStart.r)*strength)}, ${Math.round(colStart.g+(colEnd.g-colStart.g)*strength)}, ${Math.round(colStart.b+(colEnd.b-colStart.b)*strength)})`});const newIndex=Math.round(progress);if(newIndex!==currentIndex){if(currentIndex===4&&newIndex!==4){const btnSave=$('saveSettingsBtn');if(btnSave&&btnSave.classList.contains('dirty')){if(document.querySelector('.custom-modal.active')){track.scrollTo({left:4*width,behavior:'auto'});isTicking=!1;return}isRestoring=!0;track.scrollTo({left:4*width,behavior:'auto'});showUnsavedConfirm(newIndex);setTimeout(()=>{isRestoring=!1},100);isTicking=!1;return}}currentIndex=newIndex;NAV_ITEMS.forEach(b=>b.classList.remove('active'));if(NAV_ITEMS[currentIndex])NAV_ITEMS[currentIndex].classList.add('active');if(document.activeElement?.tagName==='INPUT')document.activeElement.blur();if(TABS[currentIndex]==='tab-reports')renderReports();if(TABS[currentIndex]==='tab-settings')prepareSettingsTab()}isTicking=!1}
+track.addEventListener('scroll',()=>{if(!isTicking){window.requestAnimationFrame(updateNavOnScroll);isTicking=!0}},{passive:!0});
+function goToTab(index,force=!1){if(!force&&currentIndex===4&&index!==4){const btnSave=$('saveSettingsBtn');if(btnSave&&btnSave.classList.contains('dirty')){showUnsavedConfirm(index);return}}track.scrollTo({left:index*track.offsetWidth,behavior:'smooth'})}
+window.switchTab=function(tabId,navBtn){const idx=TABS.indexOf(tabId);if(currentIndex===idx){const activeEl=$(tabId);if(activeEl)activeEl.scrollTo({top:0,behavior:'smooth'});return}goToTab(idx)};
+function showUnsavedConfirm(targetIndex){showCustomConfirm('Не сохранено!','Изменения пропадут. Уйти?','Сбросить и уйти','Остаться',()=>{revertSettings();isRestoring=!1;goToTab(targetIndex,!0)})}
+function openItemContextMenu(id,index,item){const reportText=`${item.azs} | ${item.amounts?item.amounts+' | ':''}${item.route}`;$('bsContent').innerHTML='';const btns=[{txt:'Редактировать',icon:'✏️',action:()=>loadForEdit(id),warning:!0},{txt:'Создать копию',icon:'📄',action:()=>duplicateItem(index)},{txt:'Скопировать отчет',icon:'📋',action:()=>copyReportText(reportText)},{txt:'Удалить заявку',icon:'🗑',action:()=>deleteItem(index),danger:!0}];btns.forEach(i=>{const btn=document.createElement('button');btn.className=`bs-action-btn ${i.danger?'danger':''}`;btn.innerHTML=`<span ${i.warning?'style="color:var(--warning)"':''}>${i.icon}</span> ${i.warning?'<b>'+i.txt+'</b>':i.txt}`;btn.onclick=()=>{i.action();closeBottomSheet()};$('bsContent').appendChild(btn)});$('bsHeader').textContent=item.azs;$('bottomSheet').classList.add('active')}
+function openArchiveContextMenu(id){const rec=state.archive.find(r=>r.id===id);if(!rec)return;$('bsContent').innerHTML='';const btns=[{txt:'Изменить дату/время',icon:'🕒',action:()=>changeArchiveTime(id)},{txt:'Редактировать режим',icon:'✏️',action:()=>editArchiveRecord(id),warning:!0},{txt:'Удалить запись',icon:'🗑',action:()=>deleteArchiveRecord(id),danger:!0}];btns.forEach(i=>{const btn=document.createElement('button');btn.className=`bs-action-btn ${i.danger?'danger':''}`;btn.innerHTML=`<span ${i.warning?'style="color:var(--warning)"':''}>${i.icon}</span> ${i.warning?'<b>'+i.txt+'</b>':i.txt}`;btn.onclick=()=>{i.action();closeBottomSheet()};$('bsContent').appendChild(btn)});$('bsHeader').textContent=`Архив: ${rec.date}`;$('bottomSheet').classList.add('active')}
+function openBindTransitSheet(){const content=$('bsContent');$('bsHeader').textContent='Транзитные АЗС';content.innerHTML=` <input type="text" placeholder="Поиск АЗС..." class="input-sm" style="margin-bottom:10px;" oninput="filterSheetChips(this.value)"> <div id="sheetTransitWrapper" class="chips-wrapper" style="max-height: 60vh; justify-content: flex-start;"></div> <button class="btn-main mt-10" onclick="$('bottomSheet').classList.remove('active')">Готово</button> `;const wrapper=$('sheetTransitWrapper');const currentList=parseList($('settingTransitList').value);const currentLower=currentList.map(s=>s.toLowerCase());getLiveAzsList().forEach(azs=>{const azsLow=azs.toLowerCase();const btn=document.createElement('div');btn.className='chip';btn.style.padding="8px 14px";btn.textContent=azs;btn.dataset.val=azsLow;if(currentLower.includes(azsLow))btn.classList.add('active');btn.onclick=()=>{let list=parseList($('settingTransitList').value);const idx=list.findIndex(x=>x.toLowerCase()===azsLow);if(idx>=0){list.splice(idx,1);btn.classList.remove('active')}else{list.push(azs);btn.classList.add('active')}$('settingTransitList').value=list.join(', ');checkSettingsDirty()};wrapper.appendChild(btn)});$('bottomSheet').classList.add('active')}
+function setupKeyboardBehavior(){const viewport=window.visualViewport;let initialHeight=window.innerHeight;window.addEventListener('resize',()=>{if(!document.body.classList.contains('keyboard-open')&&window.innerHeight>initialHeight)initialHeight=window.innerHeight});function checkKeyboard(){if(!viewport)return!1;return viewport.height<(initialHeight*0.80)}function handleStateChange(){const isKeyboardOpen=checkKeyboard();document.body.classList.toggle('keyboard-open',isKeyboardOpen);if(isKeyboardOpen)centerActiveElement()}function centerActiveElement(){const activeEl=document.activeElement;if(activeEl&&(activeEl.tagName==='INPUT'||activeEl.tagName==='TEXTAREA'))setTimeout(()=>{activeEl.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'})},100)}if(viewport){viewport.addEventListener('resize',handleStateChange);viewport.addEventListener('scroll',handleStateChange)}document.querySelectorAll('input, textarea').forEach(input=>{input.addEventListener('focus',()=>{setTimeout(()=>{if(checkKeyboard()||(window.innerHeight<initialHeight*0.8)){document.body.classList.add('keyboard-open');centerActiveElement()}},300)});input.addEventListener('blur',()=>{setTimeout(()=>{if(!checkKeyboard()){document.body.classList.remove('keyboard-open')}},100)})})}
+
+let dragTimer = null;
+let dragClone = null;
+let dragSrcEl = null;
+let isDraggingMode = false;
+let startX = 0;
+let startY = 0;
+let lastTouchY = 0;
+let scrollInterval = null;
+let scrollSpeed = 0;
+const AUTO_SCROLL_TOP_ZONE = 140; 
+const AUTO_SCROLL_BOTTOM_ZONE = 140;
+const MAX_SCROLL_SPEED = 20;
+
+function setupDragItem(el, item, index) {
+    el.addEventListener('touchstart', (e) => handleStart(e, el, item, index), {passive: false});
+    el.addEventListener('touchmove', handleMove, {passive: false});
+    el.addEventListener('touchend', handleEnd);
+    el.addEventListener('touchcancel', forceCancelDrag);
+    el.addEventListener('mousedown', (e) => handleStart(e, el, item, index));
+    el.addEventListener('mousemove', handleMove);
+    el.addEventListener('mouseup', handleEnd);
+    el.addEventListener('mouseleave', handleEnd);
+}
+function handleStart(e, el, item, index) {
+    if (e.button === 2) return;
+    if (e.touches && e.touches.length > 1) return;
+    if (state.autoSort) {
+        el.onclick = () => openItemContextMenu(item.id, index, item);
+        return;
+    }
+    isDraggingMode = false;
+    dragSrcEl = el;
+    if (e.touches) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+    } else {
+        startX = e.clientX;
+        startY = e.clientY;
+    }
+    clearTimeout(dragTimer);
+    dragTimer = setTimeout(() => {
+        startDrag(el, item, index);
+    }, 400);
+}
+function handleMove(e) {
+    if (!dragSrcEl) return;
+    const clientY = (e.touches) ? e.touches[0].clientY : e.clientY;
+    const clientX = (e.touches) ? e.touches[0].clientX : e.clientX;
+    lastTouchY = clientY;
+    if (!isDraggingMode) {
+        const moveX = Math.abs(clientX - startX);
+        const moveY = Math.abs(clientY - startY);
+        if (moveY > 6 || moveX > 6) {
+            clearTimeout(dragTimer);
+            dragSrcEl = null;
+        }
+        return;
+    }
+    if (e.cancelable) e.preventDefault();
+    if (e.touches && e.touches.length > 1) {
+        forceCancelDrag();
+        return;
+    }
+    if (dragClone) {
+        const h = dragClone.offsetHeight;
+        const w = dragClone.offsetWidth;
+        dragClone.style.top = `${clientY - h / 2}px`;
+        dragClone.style.left = `${clientX - w / 2}px`;
+        dragClone.style.display = 'none';
+        let elemBelow = document.elementFromPoint(clientX, clientY);
+        dragClone.style.display = 'block';
+        if (!elemBelow) return;
+        let cardBelow = elemBelow.closest('.card');
+        if (cardBelow && cardBelow !== dragSrcEl && cardBelow.parentNode === dragSrcEl.parentNode) {
+            const rect = cardBelow.getBoundingClientRect();
+            const offset = clientY - rect.top - rect.height / 2;
+            if (offset < 0) {
+                cardBelow.parentNode.insertBefore(dragSrcEl, cardBelow);
+            } else {
+                cardBelow.parentNode.insertBefore(dragSrcEl, cardBelow.nextSibling);
+            }
+            if(navigator.vibrate && Math.random() > 0.7) navigator.vibrate(5);
+        }
+    }
+    handleAutoScroll(clientY);
+}
+function handleEnd(e) {
+    clearTimeout(dragTimer);
+    if (isDraggingMode) {
+        stopDrag();
+    } else {
+        if (dragSrcEl) {
+             const id = parseInt(dragSrcEl.dataset.id);
+             if (id) {
+                 const currentIdx = state.draft.findIndex(x => x.id === id);
+                 const item = state.draft[currentIdx];
+                 if(item) openItemContextMenu(id, currentIdx, item);
+             }
+        }
+    }
+    cleanupGlobal();
+}
+function forceCancelDrag() {
+    clearTimeout(dragTimer);
+    if (isDraggingMode) stopDrag();
+    cleanupGlobal();
+}
+function cleanupGlobal() {
+    dragSrcEl = null;
+    isDraggingMode = false;
+    startX = 0;
+    startY = 0;
+}
+function startDrag(el, item, index) {
+    isDraggingMode = true;
+    if(navigator.vibrate) navigator.vibrate(50);
+    document.body.classList.add('dragging-active');
+    const rect = el.getBoundingClientRect();
+    dragClone = el.cloneNode(true);
+    dragClone.classList.add('card-clone');
+    dragClone.style.width = `${rect.width}px`;
+    dragClone.style.height = `${rect.height}px`;
+    dragClone.style.top = `${rect.top}px`;
+    dragClone.style.left = `${rect.left}px`;
+    document.body.appendChild(dragClone);
+    el.classList.add('is-dragging-placeholder');
+}
+function stopDrag() {
+    scrollSpeed = 0;
+    if (scrollInterval) {
+        cancelAnimationFrame(scrollInterval);
+        scrollInterval = null;
+    }
+    document.body.classList.remove('dragging-active');
+    if (dragSrcEl) {
+        dragSrcEl.classList.remove('is-dragging-placeholder');
+    }
+    if (dragClone) {
+        dragClone.remove();
+        dragClone = null;
+    }
+    reorderState();
+}
+function reorderState() {
+    const listContainer = $('draftList');
+    if(!listContainer) return;
+    const newOrderIds = Array.from(listContainer.children)
+        .map(child => parseInt(child.dataset.id))
+        .filter(id => !isNaN(id));
+    const newDraft = [];
+    newOrderIds.forEach(id => {
+        const item = state.draft.find(x => x.id === id);
+        if (item) newDraft.push(item);
+    });
+    state.draft = newDraft;
+    saveData();
+}
+function handleAutoScroll(clientY) {
+    const viewportH = window.innerHeight;
+    scrollSpeed = 0;
+    if (clientY < AUTO_SCROLL_TOP_ZONE) {
+        const distance = AUTO_SCROLL_TOP_ZONE - clientY;
+        const intensity = Math.min(1, distance / 60); 
+        scrollSpeed = -(MAX_SCROLL_SPEED * intensity);
+    } 
+    else if (clientY > (viewportH - AUTO_SCROLL_BOTTOM_ZONE)) {
+        const distance = clientY - (viewportH - AUTO_SCROLL_BOTTOM_ZONE);
+        const intensity = Math.min(1, distance / 60);
+        scrollSpeed = MAX_SCROLL_SPEED * intensity;
+    }
+    if (scrollSpeed !== 0 && !scrollInterval) {
+        autoScrollFrame();
+    }
+}
+function autoScrollFrame() {
+    if (!isDraggingMode || scrollSpeed === 0) {
+        cancelAnimationFrame(scrollInterval);
+        scrollInterval = null;
+        return;
+    }
+    const listContainer = document.getElementById('tab-list');
+    if (listContainer) {
+        listContainer.scrollTop += scrollSpeed;
+    }
+    scrollInterval = requestAnimationFrame(autoScrollFrame);
+}
+
+// ЛОГИКА PWA И УСТАНОВКИ
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Показываем кнопку установки
+  const installBtn = document.getElementById('installAppBtn');
+  if (installBtn) installBtn.style.display = 'block';
+});
+
+async function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') {
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) installBtn.style.display = 'none';
+  }
+  deferredPrompt = null;
+}
+
+// РЕГИСТРАЦИЯ SW
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW зарегистрирован'))
+      .catch(err => console.log('SW ошибка:', err));
+  });
+}
+
+init();
+</script>
+</body>
+</html>
